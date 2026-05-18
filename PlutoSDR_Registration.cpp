@@ -7,12 +7,10 @@
 #include <libusb.h>
 #endif
 
-static std::vector<SoapySDR::Kwargs> results;
 static std::vector<SoapySDR::Kwargs> find_PlutoSDR(const SoapySDR::Kwargs &args) {
+    
+    std::vector<SoapySDR::Kwargs> results;
 
-	if (!results.empty())
-		results.clear();
-	
 	ssize_t ret = 0;
 	iio_context *ctx = nullptr;
 	iio_scan_context *scan_ctx;
