@@ -1,38 +1,37 @@
 ########################################################################
 # Project setup
 ########################################################################
-cmake_minimum_required(VERSION 2.8.12)
-project(SoapyPlutoSDR CXX)
+cmake_minimum_required(VERSION 2.8.9)
+project(SoapyPlutoPAPR CXX)
 
 # select build type to get optimization flags
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release")
-    message(STATUS "Build type not specified: defaulting to release.")
+   set(CMAKE_BUILD_TYPE "Release")
+   message(STATUS "Build type not specified: defaulting to release.")
 endif(NOT CMAKE_BUILD_TYPE)
 set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 
 find_package(SoapySDR NO_MODULE)
-if (NOT SoapySDR_FOUND)
-    message(FATAL_ERROR "Soapy SDR development files not found...")
-endif ()
+ if (NOT SoapySDR_FOUND) 
+    message(FATAL_ERROR "Soapy SDR development files not found...") 
+ endif () 
 
 ########################################################################
 # Find libiio
 ########################################################################
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
-find_package(LibIIO 0.23 REQUIRED)
+find_package(libiio 0.9 REQUIRED)
 
-if (LibIIO_FOUND)
-    message(STATUS "LibIIO_INCLUDE_DIRS: ${LibIIO_INCLUDE_DIRS}")
-    message(STATUS "LibIIO_LIBRARIES: ${LibIIO_LIBRARIES}")
-    message(STATUS "LibIIO_DEFINITIONS: ${LibIIO_DEFINITIONS}")
-    list(APPEND PLUTOSDR_LIBS ${LibIIO_LIBRARIES})
+if (LIBIIO_FOUND)
+    message(STATUS "LIBIIO_INCLUDE_DIRS: ${LIBIIO_INCLUDE_DIRS}")
+    message(STATUS "LIBIIO_LIBRARIES: ${LIBIIO_LIBRARIES}")
+    message(STATUS "LIBIIO_DEFINITIONS: ${LIBIIO_DEFINITIONS}")
 endif()
 
-include_directories(${LibIIO_INCLUDE_DIRS})
+include_directories(${LIBIIO_INCLUDE_DIRS})
 
 #enable c++11 features
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+if(CMAKE_COMPILER_IS_GNUCXX)
 
     #C++11 is a required language feature for this project
     include(CheckCXXCompilerFlag)
@@ -40,62 +39,40 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" MATCH
     if(HAS_STD_CXX11)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
     else(HAS_STD_CXX11)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wc++11-extensions")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
     endif()
 
     #Thread support enabled (not the same as -lpthread)
-    list(APPEND LibIIO_LIBRARIES -pthread)
+    list(APPEND LIBIIO_LIBRARIES -pthread)
 
     #disable warnings for unused parameters
-    add_compile_options(-Wall -Wextra -pedantic -Wno-unused-parameter)
-endif()
+    add_definitions(-Wno-unused-parameter)
+endif(CMAKE_COMPILER_IS_GNUCXX)
+
+#enable c++11 extensions for OSX
+if (APPLE)
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wc++11-extensions")
+endif(APPLE)
 
 ########################################################################
 # Find libad9361
 ########################################################################
-find_package(LibAD9361)
+find_package(libad9361)
 
-if (LibAD9361_FOUND)
-    message(STATUS "LibAD9361_INCLUDE_DIRS: ${LibAD9361_INCLUDE_DIRS}")
-    message(STATUS "LibAD9361_LIBRARIES: ${LibAD9361_LIBRARIES}")
-    message(STATUS "LibAD9361_DEFINITIONS: ${LibAD9361_DEFINITIONS}")
-    list(APPEND PLUTOSDR_LIBS ${LibAD9361_LIBRARIES})
-    include_directories(${LibAD9361_INCLUDE_DIRS})
+if (LIBAD9361_FOUND)
+    message(STATUS "LIBAD9361_INCLUDE_DIRS: ${LIBAD9361_INCLUDE_DIRS}")
+    message(STATUS "LIBAD9361_LIBRARIES: ${LIBAD9361_LIBRARIES}")
+    message(STATUS "LIBAD9361_DEFINITIONS: ${LIBAD9361_DEFINITIONS}")
+    include_directories(${LIBAD9361_INCLUDE_DIRS})
     add_definitions(-DHAS_AD9361_IIO)
-endif()
-
-########################################################################
-# Find libusb
-########################################################################
-find_package(LibUSB)
-
-if(LibUSB_FOUND)
-    message(STATUS "LibUSB_INCLUDE_DIRS: ${LibUSB_INCLUDE_DIRS}")
-    message(STATUS "LibUSB_LIBRARIES: ${LibUSB_LIBRARIES}")
-    message(STATUS "LibUSB_DEFINITIONS: ${LibUSB_DEFINITIONS}")
-    list(APPEND PLUTOSDR_LIBS ${LibUSB_LIBRARIES})
-    include_directories(${LibUSB_INCLUDE_DIRS})
-    add_definitions(-DHAS_LIBUSB1)
-    #disable warnings for libusb.h
-    add_compile_options($<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wno-zero-length-array>)
 endif()
 
 
 SOAPY_SDR_MODULE_UTIL(
-    TARGET TezukaSupport
+    TARGET PlutoSDRSupport
     SOURCES
     PlutoSDR_Registration.cpp
     PlutoSDR_Settings.cpp
     PlutoSDR_Streaming.cpp
-    LIBRARIES ${PLUTOSDR_LIBS}
+    LIBRARIES ${LIBIIO_LIBRARIES} ${LIBAD9361_LIBRARIES}
 )
-
-########################################################################
-# uninstall target
-########################################################################
-add_custom_target(uninstall
-    "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-    IMMEDIATE @ONLY)

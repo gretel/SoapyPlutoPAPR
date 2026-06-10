@@ -6,18 +6,13 @@
 #include <atomic>
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Logger.hpp>
-#include <SoapySDR/Types.hpp>
 #include <SoapySDR/Formats.hpp>
 
 typedef enum plutosdrStreamFormat {
 	PLUTO_SDR_CF32,
 	PLUTO_SDR_CS16,
 	PLUTO_SDR_CS12,
-	PLUTO_SDR_CS8,
-	PLUTO_SDR_CF32_TEZUKA,
-	PLUTO_SDR_CS16_TEZUKA,
-	PLUTO_SDR_CS12_TEZUKA,
-	PLUTO_SDR_CS8_TEZUKA
+	PLUTO_SDR_CS8
 } plutosdrStreamFormat;
 
 class rx_streamer {
@@ -42,7 +37,7 @@ class rx_streamer {
 
 	private:
 
-		void set_buffer_size(const size_t _buffer_size,const size_t num_kernel);
+		void set_buffer_size(const size_t _buffer_size);
         void set_mtu_size(const size_t mtu_size);
 
 		bool has_direct_copy();
@@ -57,7 +52,6 @@ class rx_streamer {
 		const plutosdrStreamFormat format;
 		bool direct_copy;
         size_t mtu_size;
-		//bool UseExtendedTezukaFeatures=false;
 
 };
 
@@ -68,25 +62,21 @@ class tx_streamer {
 		~tx_streamer();
 		int send(const void * const *buffs,const size_t numElems,int &flags,const long long timeNs,const long timeoutUs );
 		int flush();
-		void set_buffer_size_by_samplerate(const size_t _samplerate);
-		size_t get_mtu_size();
+
 	private:
 		int send_buf();
 		bool has_direct_copy();
-		void set_buffer_size(const size_t _buffer_size,const size_t num_kernel);
-        void set_mtu_size(const size_t mtu_size);
 
 		std::vector<iio_channel* > channel_list;
 		const iio_device  *dev;
 		const plutosdrStreamFormat format;
 		
 		iio_buffer  *buf;
-		size_t buffer_size;
-		size_t items_in_buffer=0;
+		size_t buf_size;
+		size_t items_in_buf;
 		bool direct_copy;
-		size_t mtu_size;
 
-};	
+};
 
 // A local spin_mutex usable with std::lock_guard
        //for lightweight locking for short periods.
@@ -195,17 +185,6 @@ class SoapyPlutoSDR : public SoapySDR::Device{
 
 
 		/*******************************************************************
- 		 * Sensor API
- 		 ******************************************************************/
-
-		std::vector<std::string> listSensors(void) const;
-
-		SoapySDR::ArgInfo getSensorInfo(const std::string &key) const;
-
-		std::string readSensor(const std::string &key) const;
-
-
-		/*******************************************************************
 		 * Settings API
 		 ******************************************************************/
 
@@ -216,6 +195,15 @@ class SoapyPlutoSDR : public SoapySDR::Device{
 
 
 		std::string readSetting(const std::string &key) const;
+
+
+		SoapySDR::ArgInfoList getSettingInfo(const int direction, const size_t channel) const;
+
+
+		void writeSetting(const int direction, const size_t channel, const std::string &key, const std::string &value);
+
+
+		std::string readSetting(const int direction, const size_t channel, const std::string &key) const;
 
 
 		/*******************************************************************
@@ -306,18 +294,13 @@ class SoapyPlutoSDR : public SoapySDR::Device{
 
 		std::vector<double> listBandwidths( const int direction, const size_t channel ) const;
 
-		SoapySDR::RangeList getSampleRateRange(const int direction, const size_t channel) const;
+       
 
 	private:
 
         bool IsValidRxStreamHandle(SoapySDR::Stream* handle) const;
-        bool IsValidTxStreamHandle(SoapySDR::Stream* handle) const;
+        bool IsValidTxStreamHandle(SoapySDR::Stream* handle);
        
-		bool is_sensor_channel(struct iio_channel *chn) const;
-		double double_from_buf(const char *buf) const;
-		double get_sensor_value(struct iio_channel *chn) const;
-		std::string id_to_unit(const std::string &id) const;
-
 		iio_device *dev;
 		iio_device *rx_dev;
 		iio_device *tx_dev;
@@ -329,6 +312,7 @@ class SoapyPlutoSDR : public SoapySDR::Device{
 		bool decimation, interpolation;
 		std::unique_ptr<rx_streamer> rx_stream;
         std::unique_ptr<tx_streamer> tx_stream;
-		bool UseExtendedTezukaFeatures=false;
+
+        
 };
 
