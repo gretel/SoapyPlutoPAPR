@@ -22,7 +22,7 @@ static std::vector<SoapySDR::Kwargs> find_PlutoSDR(const SoapySDR::Kwargs &args)
 		iio_scan_context_destroy(scan_ctx);
 		return results;
 	}
-	options["device"] = "plutoPAPR";
+	options["device"] = "tezuka";
 	if(ret == 0){
 
 		//no devices discovered, the user must specify a hostname
@@ -59,4 +59,4 @@ static SoapySDR::Device *make_PlutoSDR(const SoapySDR::Kwargs &args)
 	return new SoapyPlutoSDR(args);
 }
 
-static SoapySDR::Registry register_plutosdr("plutoPAPR", &find_PlutoSDR, &make_PlutoSDR, SOAPY_SDR_ABI_VERSION);
+static SoapySDR::Registry register_plutosdr("tezuka", &find_PlutoSDR, &make_PlutoSDR, SOAPY_SDR_ABI_VERSION);
